@@ -10,7 +10,9 @@ const todos = [{
     text: "First test todo"
 }, {
     _id: new ObjectId(),
-    text: "Second test todo"
+    text: "Second test todo",
+    completed: true,
+    completedAt: 333
 }]
 beforeEach((done) => {
     Todo.remove({}).then(() => {
@@ -113,7 +115,7 @@ describe('DELETE /todos/:id', () => {
             .end((err, res) => {
                 if (err) return done(err);
                 Todo.findById(hexId).then((doc) => {
-                    expect(doc).toNotExist(done);
+                    expect(doc).toNotExist();
                     done();
                 }).catch((e) => done(e))
             })
@@ -134,4 +136,54 @@ describe('DELETE /todos/:id', () => {
         .expect(404)
         .end(done);
     });
+})
+
+describe('PATCH /todos/:id', () => {
+    it('should update the todo', (done) => {
+        var hexId = todos[0]._id.toHexString();
+        var text = "Hello";
+        var completed = true;
+        request(app)
+            .patch(`/todos/${hexId}`)
+            .send({
+                text,
+                completed
+            })
+            .expect(200)
+            .end((err, res) => {
+                if (err) return done(err);
+
+                Todo.findById(hexId).then((todo) => {
+                    expect(todo.text).toBe(text);
+                    expect(todo.completedAt).toBeA('number');
+                    done();
+                }).catch((e) => done(e))
+            })
+    });
+
+    it('should clear completedAt when todo is not completed', (done) => {
+        var hexId = todos[1]._id.toHexString();
+        var text = "New text";
+        var completed = false;
+        request(app)
+            .patch(`/todos/${hexId}`)
+            .send({
+                text,
+                completed
+            })
+            .expect(200)
+            .end((err, res) => {
+                if (err) return done(err);
+
+                Todo.findById(hexId).then((todo) => {
+                    expect(todo.completedAt).toNotExist();
+                    done();
+                }).catch((err) => done(err));
+            });
+
+        //Grab id of second todo item
+        //update text, set completed to false
+        // 200
+        // text is changed, completed false, completedAt is null .toNotExist
+    })
 })
